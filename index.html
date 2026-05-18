@@ -1,0 +1,1142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rags to Riches - Life Simulator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+
+        h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+        }
+
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .panel {
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .panel h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .stat-label {
+            font-weight: 600;
+        }
+
+        .stat-value {
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .money {
+            color: #27ae60;
+            font-size: 1.2em;
+            font-weight: bold;
+        }
+
+        .button-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        button {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            font-size: 1em;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #27ae60;
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #229954;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(39, 174, 96, 0.4);
+        }
+
+        .btn-danger {
+            background: #e74c3c;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #c0392b;
+        }
+
+        .btn-full {
+            grid-column: 1 / -1;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            max-width: 500px;
+            max-height: 80vh;
+            overflow-y: auto;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        .modal-content h3 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+        }
+
+        .close-modal {
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            color: #999;
+            cursor: pointer;
+        }
+
+        .close-modal:hover {
+            color: #333;
+        }
+
+        .skill-list, .career-list, .investment-list {
+            margin: 15px 0;
+        }
+
+        .skill-item, .career-item, .investment-item {
+            padding: 12px;
+            margin: 8px 0;
+            background: #f5f5f5;
+            border-left: 4px solid #667eea;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .skill-item:hover, .career-item:hover, .investment-item:hover {
+            background: #e8e8ff;
+            transform: translateX(5px);
+        }
+
+        .skill-progress {
+            margin-top: 8px;
+            background: #ddd;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+        }
+
+        .skill-bar {
+            background: #667eea;
+            height: 100%;
+            transition: width 0.3s ease;
+        }
+
+        .event-log {
+            max-height: 300px;
+            overflow-y: auto;
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+        }
+
+        .event {
+            padding: 8px;
+            margin: 5px 0;
+            border-left: 3px solid #667eea;
+            font-size: 0.9em;
+            color: #555;
+        }
+
+        .event.positive {
+            border-left-color: #27ae60;
+            background: #f0f8f5;
+        }
+
+        .event.negative {
+            border-left-color: #e74c3c;
+            background: #fdf5f5;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab-btn {
+            padding: 10px 20px;
+            background: none;
+            border: none;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            font-weight: 600;
+            color: #999;
+            transition: all 0.3s ease;
+        }
+
+        .tab-btn.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .progress-container {
+            margin: 15px 0;
+        }
+
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+        }
+
+        .progress-bar {
+            background: #ddd;
+            border-radius: 10px;
+            height: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            height: 100%;
+            transition: width 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 0.75em;
+            font-weight: bold;
+        }
+
+        .achievement {
+            padding: 15px;
+            background: linear-gradient(135deg, #ffd89b 0%, #19547b 100%);
+            color: white;
+            border-radius: 8px;
+            margin: 10px 0;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .achievement-title {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .achievement.locked {
+            opacity: 0.5;
+            background: linear-gradient(135deg, #999 0%, #666 100%);
+        }
+
+        @media (max-width: 1024px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+
+            h1 {
+                font-size: 2em;
+            }
+
+            .button-group {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .toggle-btn {
+            background: #764ba2;
+            color: white;
+            margin-bottom: 15px;
+        }
+
+        .next-btn {
+            background: #2ecc71;
+            color: white;
+            font-size: 1.1em;
+            padding: 15px 30px;
+            width: 100%;
+            margin-top: 20px;
+        }
+
+        .next-btn:hover {
+            background: #27ae60;
+        }
+
+        .warning {
+            color: #e74c3c;
+            font-weight: bold;
+        }
+
+        .success {
+            color: #27ae60;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>💰 Rags to Riches</h1>
+            <p class="subtitle">Turn your life around and build an empire</p>
+        </header>
+
+        <div class="main-grid">
+            <!-- Status Panel -->
+            <div class="panel">
+                <h2>📊 Status</h2>
+                <div class="stat-item">
+                    <span class="stat-label">Age:</span>
+                    <span class="stat-value" id="age">18</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Net Worth:</span>
+                    <span class="stat-value money" id="netWorth">$0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Cash:</span>
+                    <span class="stat-value money" id="cash">$0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Health:</span>
+                    <span class="stat-value" id="health">100%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Happiness:</span>
+                    <span class="stat-value" id="happiness">50%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Reputation:</span>
+                    <span class="stat-value" id="reputation">0</span>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="game.nextYear()">⏭️ Next Year</button>
+                    <button class="btn-secondary" onclick="game.rest()">😴 Rest</button>
+                </div>
+            </div>
+
+            <!-- Career Panel -->
+            <div class="panel">
+                <h2>👔 Career</h2>
+                <div class="stat-item">
+                    <span class="stat-label">Job:</span>
+                    <span class="stat-value" id="currentJob">Unemployed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Salary:</span>
+                    <span class="stat-value money" id="salary">$0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Experience:</span>
+                    <span class="stat-value" id="experience">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Monthly Income:</span>
+                    <span class="stat-value money" id="monthlyIncome">$0</span>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary btn-full" onclick="game.showCareers()">📋 Find Job</button>
+                    <button class="btn-secondary btn-full" onclick="game.toggleBusiness()">🏪 Start Business</button>
+                </div>
+            </div>
+
+            <!-- Assets Panel -->
+            <div class="panel">
+                <h2>🏠 Assets</h2>
+                <div class="stat-item">
+                    <span class="stat-label">Real Estate:</span>
+                    <span class="stat-value money" id="realEstateValue">$0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Investments:</span>
+                    <span class="stat-value money" id="investmentValue">$0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Vehicle:</span>
+                    <span id="vehicleStatus">None</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Savings:</span>
+                    <span class="stat-value money" id="savingsValue">$0</span>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary btn-full" onclick="game.showRealEstate()">🏠 Real Estate</button>
+                    <button class="btn-secondary btn-full" onclick="game.showInvestments()">📈 Invest</button>
+                </div>
+            </div>
+
+            <!-- Education Panel -->
+            <div class="panel">
+                <h2>🎓 Education</h2>
+                <div id="educationStatus"></div>
+                <button class="btn-primary btn-full" onclick="game.showEducation()">📚 Study</button>
+            </div>
+
+            <!-- Skills Panel -->
+            <div class="panel">
+                <h2>🛠️ Skills</h2>
+                <div id="skillsList"></div>
+                <button class="btn-primary btn-full" onclick="game.showSkillTraining()">⚡ Train Skills</button>
+            </div>
+
+            <!-- Action Panel -->
+            <div class="panel">
+                <h2>⚙️ Actions</h2>
+                <button class="btn-secondary btn-full" onclick="game.invest()">💵 Invest Money</button>
+                <button class="btn-secondary btn-full" onclick="game.startGig()">💼 Do Side Gig</button>
+                <button class="btn-secondary btn-full" onclick="game.gamble()">🎲 Try Your Luck</button>
+                <button class="btn-danger btn-full" onclick="game.takeLoan()">💳 Take Loan</button>
+            </div>
+
+            <!-- Events Log Panel - Full Width -->
+            <div class="panel full-width">
+                <h2>📰 Life Events</h2>
+                <div class="event-log" id="eventLog"></div>
+            </div>
+
+            <!-- Achievements Panel - Full Width -->
+            <div class="panel full-width">
+                <h2>🏆 Achievements</h2>
+                <div id="achievementsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modals -->
+    <div id="careerModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="document.getElementById('careerModal').classList.remove('active')">&times;</span>
+            <h3>Choose Your Career</h3>
+            <div class="career-list" id="careerList"></div>
+        </div>
+    </div>
+
+    <div id="educationModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="document.getElementById('educationModal').classList.remove('active')">&times;</span>
+            <h3>Education Options</h3>
+            <div id="educationContent"></div>
+        </div>
+    </div>
+
+    <div id="skillModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="document.getElementById('skillModal').classList.remove('active')">&times;</span>
+            <h3>Train Skills</h3>
+            <div id="skillContent"></div>
+        </div>
+    </div>
+
+    <div id="realEstateModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="document.getElementById('realEstateModal').classList.remove('active')">&times;</span>
+            <h3>Real Estate Opportunities</h3>
+            <div id="realEstateContent"></div>
+        </div>
+    </div>
+
+    <div id="investmentModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="document.getElementById('investmentModal').classList.remove('active')">&times;</span>
+            <h3>Investment Options</h3>
+            <div id="investmentContent"></div>
+        </div>
+    </div>
+
+    <div id="businessModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="document.getElementById('businessModal').classList.remove('active')">&times;</span>
+            <h3>Business Management</h3>
+            <div id="businessContent"></div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const game = {
+            year: 0,
+            age: 18,
+            cash: 1000,
+            savings: 0,
+            health: 100,
+            happiness: 50,
+            reputation: 0,
+            experience: 0,
+
+            currentJob: null,
+            jobSalary: 0,
+            businessOwned: false,
+            businessIncome: 0,
+            businessLevel: 0,
+
+            realEstate: [],
+            investments: [],
+            vehicles: [],
+
+            education: {
+                highSchool: false,
+                bachelor: false,
+                master: false,
+                phd: false
+            },
+
+            skills: {
+                negotiation: 0,
+                programming: 0,
+                marketing: 0,
+                finance: 0,
+                sales: 0,
+                leadership: 0,
+                writing: 0,
+                networking: 0
+            },
+
+            loans: [],
+            events: [],
+            achievements: [],
+
+            careers: [
+                { name: 'Fast Food Worker', salary: 25000, req: 0, skill: 'sales' },
+                { name: 'Retail Manager', salary: 45000, req: 0, skill: 'leadership' },
+                { name: 'Office Clerk', salary: 40000, req: 0, skill: 'programming' },
+                { name: 'Teacher', salary: 55000, req: 'highSchool', skill: 'leadership' },
+                { name: 'Junior Developer', salary: 75000, req: 'bachelor', skill: 'programming' },
+                { name: 'Sales Manager', salary: 65000, req: 'bachelor', skill: 'sales' },
+                { name: 'Project Manager', salary: 80000, req: 'bachelor', skill: 'leadership' },
+                { name: 'Senior Developer', salary: 130000, req: 'bachelor', skill: 'programming' },
+                { name: 'Executive', salary: 150000, req: 'master', skill: 'leadership' },
+                { name: 'Entrepreneur', salary: 0, req: 0, skill: 'negotiation' }
+            ],
+
+            realEstateOptions: [
+                { name: 'Apartment', price: 150000, value: 150000, income: 500 },
+                { name: 'House', price: 350000, value: 350000, income: 1200 },
+                { name: 'Luxury Home', price: 800000, value: 800000, income: 2500 },
+                { name: 'Office Building', price: 1200000, value: 1200000, income: 4000 },
+                { name: 'Shopping Mall', price: 2500000, value: 2500000, income: 8000 }
+            ],
+
+            investmentOptions: [
+                { name: 'Savings Account', minInvest: 1000, returns: 0.02, risk: 0 },
+                { name: 'Stocks', minInvest: 5000, returns: 0.08, risk: 0.3 },
+                { name: 'Bonds', minInvest: 2000, returns: 0.04, risk: 0.1 },
+                { name: 'Cryptocurrency', minInvest: 1000, returns: 0.25, risk: 0.8 },
+                { name: 'Mutual Funds', minInvest: 3000, returns: 0.06, risk: 0.2 },
+                { name: 'Startup Fund', minInvest: 10000, returns: 0.3, risk: 0.7 }
+            ],
+
+            eventMessages: [
+                'A distant relative left you $2,000 in their will',
+                'You found $500 on the street',
+                'Your investment paid off handsomely',
+                'You got a raise at work',
+                'You lost your job due to layoffs',
+                'Medical emergency cost you $5,000',
+                'Someone stole your bicycle',
+                'Your car needs $3,000 in repairs',
+                'You won a lottery drawing - $10,000',
+                'Stock market crashed, investments down 20%',
+                'You got promoted with a 15% raise',
+                'Business opportunity came your way',
+                'Economic recession hit your income',
+                'Great networking event boosted your reputation',
+                'Got scammed out of $2,000'
+            ],
+
+            init() {
+                this.addEvent('Welcome to Rags to Riches! Start your journey to wealth.', 'positive');
+                this.update();
+            },
+
+            update() {
+                document.getElementById('age').textContent = this.age;
+                document.getElementById('cash').textContent = '$' + this.formatNumber(this.cash);
+                document.getElementById('netWorth').textContent = '$' + this.formatNumber(this.calculateNetWorth());
+                document.getElementById('health').textContent = this.health + '%';
+                document.getElementById('happiness').textContent = this.happiness + '%';
+                document.getElementById('reputation').textContent = this.reputation;
+
+                document.getElementById('currentJob').textContent = this.currentJob || 'Unemployed';
+                document.getElementById('salary').textContent = '$' + this.formatNumber(this.jobSalary);
+                document.getElementById('experience').textContent = this.experience;
+                document.getElementById('monthlyIncome').textContent = '$' + this.formatNumber(this.calculateMonthlyIncome());
+
+                document.getElementById('realEstateValue').textContent = '$' + this.formatNumber(this.calculateRealEstateValue());
+                document.getElementById('investmentValue').textContent = '$' + this.formatNumber(this.calculateInvestmentValue());
+                document.getElementById('savingsValue').textContent = '$' + this.formatNumber(this.savings);
+
+                this.updateSkillsList();
+                this.updateEducationStatus();
+                this.updateAchievements();
+            },
+
+            formatNumber(num) {
+                return Math.floor(num).toLocaleString();
+            },
+
+            calculateNetWorth() {
+                return this.cash + this.savings + this.calculateRealEstateValue() + this.calculateInvestmentValue();
+            },
+
+            calculateMonthlyIncome() {
+                let income = this.jobSalary / 12;
+                if (this.businessOwned) income += this.businessIncome * (1 + this.businessLevel * 0.1);
+                this.realEstate.forEach(prop => income += prop.income);
+                return income;
+            },
+
+            calculateRealEstateValue() {
+                return this.realEstate.reduce((sum, prop) => sum + prop.value, 0);
+            },
+
+            calculateInvestmentValue() {
+                return this.investments.reduce((sum, inv) => sum + inv.amount, 0);
+            },
+
+            nextYear() {
+                this.year++;
+                this.age++;
+                this.experience += Math.random() * 10;
+
+                let monthlyIncome = this.calculateMonthlyIncome();
+                this.cash += monthlyIncome * 12;
+
+                this.health = Math.min(100, this.health + (this.happiness > 60 ? 5 : -5));
+                this.happiness = Math.max(0, Math.min(100, this.happiness + Math.random() * 20 - 10));
+
+                this.skills.negotiation += 1;
+                Object.keys(this.skills).forEach(skill => {
+                    if (Math.random() < 0.3) this.skills[skill] += Math.random() * 2;
+                });
+
+                this.investments.forEach(inv => {
+                    inv.amount *= (1 + inv.returns + (Math.random() - 0.5) * inv.risk);
+                });
+
+                this.realEstate.forEach(prop => {
+                    prop.value *= 1.05 + Math.random() * 0.05;
+                });
+
+                this.triggerRandomEvent();
+                this.checkAchievements();
+                this.update();
+                this.addEvent('Year ' + this.year + ' completed. Monthly income: $' + this.formatNumber(monthlyIncome), 'positive');
+            },
+
+            rest() {
+                this.health = Math.min(100, this.health + 20);
+                this.happiness = Math.min(100, this.happiness + 15);
+                this.addEvent('You rested and feel refreshed!', 'positive');
+                this.update();
+            },
+
+            showCareers() {
+                const modal = document.getElementById('careerModal');
+                const list = document.getElementById('careerList');
+                list.innerHTML = '';
+
+                this.careers.forEach(career => {
+                    const eligible = this.canTakeCareer(career);
+                    const item = document.createElement('div');
+                    item.className = 'career-item' + (eligible ? '' : ' disabled');
+                    item.style.opacity = eligible ? '1' : '0.5';
+                    item.innerHTML = `
+                        <strong>${career.name}</strong><br>
+                        Salary: $${this.formatNumber(career.salary)}/year<br>
+                        Requirement: ${this.getRequirement(career.req)}
+                        ${eligible ? '<br><button class="btn-primary btn-full" style="margin-top: 10px;" onclick="game.takeJob(\'' + career.name + '\', ' + career.salary + ')">Take Job</button>' : '<span class="warning">Not eligible</span>'}
+                    `;
+                    list.appendChild(item);
+                });
+
+                modal.classList.add('active');
+            },
+
+            canTakeCareer(career) {
+                if (career.req === 0) return true;
+                if (typeof career.req === 'string') return this.education[career.req];
+                return true;
+            },
+
+            getRequirement(req) {
+                if (req === 0) return 'None';
+                if (req === 'highSchool') return 'High School (Completed)';
+                if (req === 'bachelor') return 'Bachelor Degree';
+                if (req === 'master') return 'Master Degree';
+                return 'Unknown';
+            },
+
+            takeJob(name, salary) {
+                this.currentJob = name;
+                this.jobSalary = salary;
+                this.experience += 10;
+                document.getElementById('careerModal').classList.remove('active');
+                this.addEvent('You got a job as ' + name + ' with salary $' + this.formatNumber(salary), 'positive');
+                this.update();
+            },
+
+            showEducation() {
+                const modal = document.getElementById('educationModal');
+                const content = document.getElementById('educationContent');
+
+                const education = [
+                    { name: 'High School', cost: 15000, key: 'highSchool', duration: 4, bonus: 15000 },
+                    { name: 'Bachelor Degree', cost: 80000, key: 'bachelor', duration: 4, bonus: 50000 },
+                    { name: 'Master Degree', cost: 60000, key: 'master', duration: 2, bonus: 40000 },
+                    { name: 'PhD', cost: 100000, key: 'phd', duration: 5, bonus: 60000 }
+                ];
+
+                content.innerHTML = '';
+                education.forEach(edu => {
+                    if (!this.education[edu.key]) {
+                        const item = document.createElement('div');
+                        item.className = 'investment-item';
+                        item.innerHTML = `
+                            <strong>${edu.name}</strong><br>
+                            Cost: $${this.formatNumber(edu.cost)}<br>
+                            Duration: ${edu.duration} years<br>
+                            Salary Bonus: $${this.formatNumber(edu.bonus)}<br>
+                            ${this.cash >= edu.cost ? '<button class="btn-primary btn-full" onclick="game.enrollEducation(\'' + edu.key + '\', ' + edu.cost + ')">Enroll</button>' : '<span class="warning">Insufficient funds</span>'}
+                        `;
+                        content.appendChild(item);
+                    }
+                });
+
+                modal.classList.add('active');
+            },
+
+            enrollEducation(key, cost) {
+                if (this.cash >= cost) {
+                    this.cash -= cost;
+                    this.education[key] = true;
+                    this.experience += 20;
+                    this.addEvent('You completed ' + key.replace(/([A-Z])/g, ' $1').trim() + '!', 'positive');
+                    document.getElementById('educationModal').classList.remove('active');
+                    this.update();
+                }
+            },
+
+            showSkillTraining() {
+                const modal = document.getElementById('skillModal');
+                const content = document.getElementById('skillContent');
+
+                content.innerHTML = '';
+                Object.entries(this.skills).forEach(([skill, level]) => {
+                    const cost = 500 + level * 100;
+                    const item = document.createElement('div');
+                    item.className = 'investment-item';
+                    item.innerHTML = `
+                        <strong>${this.capitalize(skill)}</strong><br>
+                        Current Level: ${Math.floor(level)}<br>
+                        Training Cost: $${cost}<br>
+                        ${this.cash >= cost ? '<button class="btn-primary btn-full" onclick="game.trainSkill(\'' + skill + '\', ' + cost + ')">Train</button>' : '<span class="warning">Insufficient funds</span>'}
+                    `;
+                    content.appendChild(item);
+                });
+
+                modal.classList.add('active');
+            },
+
+            trainSkill(skill, cost) {
+                if (this.cash >= cost) {
+                    this.cash -= cost;
+                    this.skills[skill] += 5 + Math.random() * 5;
+                    this.addEvent('You improved your ' + skill + ' skill!', 'positive');
+                    this.update();
+                }
+            },
+
+            showRealEstate() {
+                const modal = document.getElementById('realEstateModal');
+                const content = document.getElementById('realEstateContent');
+
+                content.innerHTML = '';
+                this.realEstateOptions.forEach(option => {
+                    const item = document.createElement('div');
+                    item.className = 'investment-item';
+                    item.innerHTML = `
+                        <strong>${option.name}</strong><br>
+                        Price: $${this.formatNumber(option.price)}<br>
+                        Monthly Income: $${option.income}<br>
+                        Annual Yield: ${((option.income * 12 / option.price) * 100).toFixed(1)}%<br>
+                        ${this.cash >= option.price ? '<button class="btn-primary btn-full" onclick="game.buyRealEstate(' + this.realEstateOptions.indexOf(option) + ')">Buy</button>' : '<span class="warning">Need $' + this.formatNumber(option.price - this.cash) + ' more</span>'}
+                    `;
+                    content.appendChild(item);
+                });
+
+                if (this.realEstate.length > 0) {
+                    content.innerHTML += '<h4 style="margin-top: 20px; color: #667eea;">Your Properties</h4>';
+                    this.realEstate.forEach((prop, i) => {
+                        const div = document.createElement('div');
+                        div.className = 'investment-item';
+                        div.innerHTML = `
+                            <strong>${prop.name}</strong><br>
+                            Current Value: $${this.formatNumber(prop.value)}<br>
+                            Monthly Income: $${prop.income}<br>
+                            <button class="btn-danger" onclick="game.sellRealEstate(${i})" style="margin-top: 10px;">Sell</button>
+                        `;
+                        content.appendChild(div);
+                    });
+                }
+
+                modal.classList.add('active');
+            },
+
+            buyRealEstate(index) {
+                const option = this.realEstateOptions[index];
+                if (this.cash >= option.price) {
+                    this.cash -= option.price;
+                    this.realEstate.push({...option});
+                    this.addEvent('You purchased a ' + option.name + ' for $' + this.formatNumber(option.price), 'positive');
+                    this.reputation += 5;
+                    this.update();
+                }
+            },
+
+            sellRealEstate(index) {
+                const prop = this.realEstate[index];
+                this.cash += prop.value;
+                this.realEstate.splice(index, 1);
+                this.addEvent('You sold ' + prop.name + ' for $' + this.formatNumber(prop.value), 'positive');
+                this.update();
+            },
+
+            showInvestments() {
+                const modal = document.getElementById('investmentModal');
+                const content = document.getElementById('investmentContent');
+
+                content.innerHTML = '';
+                this.investmentOptions.forEach((option, i) => {
+                    const item = document.createElement('div');
+                    item.className = 'investment-item';
+                    item.innerHTML = `
+                        <strong>${option.name}</strong><br>
+                        Minimum: $${this.formatNumber(option.minInvest)}<br>
+                        Expected Return: ${(option.returns * 100).toFixed(1)}%/year<br>
+                        Risk Level: ${(option.risk * 100).toFixed(0)}%<br>
+                        <input type="number" id="invest_${i}" placeholder="Amount" min="${option.minInvest}" max="${Math.floor(this.cash)}"><br>
+                        <button class="btn-primary btn-full" onclick="game.investMoney(${i})" style="margin-top: 10px;">Invest</button>
+                    `;
+                    content.appendChild(item);
+                });
+
+                modal.classList.add('active');
+            },
+
+            investMoney(index) {
+                const option = this.investmentOptions[index];
+                const amount = parseFloat(document.getElementById('invest_' + index).value);
+
+                if (amount >= option.minInvest && amount <= this.cash) {
+                    this.cash -= amount;
+                    this.investments.push({
+                        name: option.name,
+                        amount: amount,
+                        returns: option.returns,
+                        risk: option.risk,
+                        purchased: this.year
+                    });
+                    this.addEvent('You invested $' + this.formatNumber(amount) + ' in ' + option.name, 'positive');
+                    this.update();
+                }
+            },
+
+            toggleBusiness() {
+                if (this.businessOwned) {
+                    document.getElementById('businessModal').classList.add('active');
+                    this.showBusinessStatus();
+                } else {
+                    if (this.cash >= 10000) {
+                        this.cash -= 10000;
+                        this.businessOwned = true;
+                        this.businessIncome = 2000;
+                        this.addEvent('You started a business! Initial income: $' + this.formatNumber(this.businessIncome) + '/month', 'positive');
+                        this.update();
+                    } else {
+                        this.addEvent('You need $10,000 to start a business', 'negative');
+                    }
+                }
+            },
+
+            showBusinessStatus() {
+                const content = document.getElementById('businessContent');
+                content.innerHTML = `
+                    <strong>Business Status</strong><br>
+                    Monthly Income: $${this.formatNumber(this.businessIncome)}<br>
+                    Level: ${this.businessLevel + 1}<br>
+                    <button class="btn-secondary btn-full" onclick="game.expandBusiness()">Expand Business (Cost: $${this.formatNumber((this.businessLevel + 1) * 5000)})</button>
+                    <button class="btn-danger btn-full" onclick="game.closeBusiness()">Close Business</button>
+                `;
+            },
+
+            expandBusiness() {
+                const cost = (this.businessLevel + 1) * 5000;
+                if (this.cash >= cost) {
+                    this.cash -= cost;
+                    this.businessLevel++;
+                    this.businessIncome *= 1.5;
+                    this.addEvent('You expanded your business! New income: $' + this.formatNumber(this.businessIncome) + '/month', 'positive');
+                    this.update();
+                }
+            },
+
+            closeBusiness() {
+                this.businessOwned = false;
+                this.businessLevel = 0;
+                this.businessIncome = 0;
+                document.getElementById('businessModal').classList.remove('active');
+                this.addEvent('You closed your business', 'negative');
+                this.update();
+            },
+
+            invest() {
+                this.showInvestments();
+            },
+
+            startGig() {
+                const income = 500 + this.skills.negotiation * 10;
+                this.cash += income;
+                this.health -= 10;
+                this.experience += 1;
+                this.addEvent('You completed a side gig and earned $' + this.formatNumber(income), 'positive');
+                this.update();
+            },
+
+            gamble() {
+                const bet = Math.min(1000, this.cash * 0.1);
+                if (Math.random() > 0.6) {
+                    this.cash += bet * 2;
+                    this.addEvent('You won $' + this.formatNumber(bet * 2) + ' gambling!', 'positive');
+                } else {
+                    this.cash -= bet;
+                    this.addEvent('You lost $' + this.formatNumber(bet) + ' gambling', 'negative');
+                }
+                this.happiness += 10;
+                this.update();
+            },
+
+            takeLoan() {
+                const amount = 5000;
+                if (this.loans.length < 3) {
+                    this.cash += amount;
+                    this.loans.push({ amount: amount, interest: 0.1, remaining: amount });
+                    this.addEvent('You took a loan of $' + this.formatNumber(amount), 'negative');
+                    this.update();
+                }
+            },
+
+            triggerRandomEvent() {
+                const event = this.eventMessages[Math.floor(Math.random() * this.eventMessages.length)];
+                const eventType = Math.random();
+
+                if (eventType > 0.5) {
+                    const amount = Math.random() * 5000;
+                    this.cash += amount;
+                    this.addEvent(event, 'positive');
+                } else {
+                    const amount = Math.random() * 3000;
+                    this.cash -= amount;
+                    this.addEvent(event, 'negative');
+                }
+            },
+
+            addEvent(message, type = 'neutral') {
+                const event = { message, type, year: this.year };
+                this.events.unshift(event);
+                if (this.events.length > 50) this.events.pop();
+
+                const log = document.getElementById('eventLog');
+                const div = document.createElement('div');
+                div.className = 'event ' + type;
+                div.textContent = '[Year ' + this.year + '] ' + message;
+                log.insertBefore(div, log.firstChild);
+            },
+
+            updateSkillsList() {
+                const list = document.getElementById('skillsList');
+                list.innerHTML = '';
+                Object.entries(this.skills).forEach(([skill, level]) => {
+                    const div = document.createElement('div');
+                    div.innerHTML = `
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span>${this.capitalize(skill)}</span>
+                            <span>${Math.floor(level)}</span>
+                        </div>
+                        <div class="skill-progress">
+                            <div class="skill-bar" style="width: ${Math.min(100, (level % 10) * 10)}%"></div>
+                        </div>
+                    `;
+                    list.appendChild(div);
+                });
+            },
+
+            updateEducationStatus() {
+                const status = document.getElementById('educationStatus');
+                status.innerHTML = '';
+                let completed = '';
+                if (this.education.highSchool) completed += '✓ High School<br>';
+                if (this.education.bachelor) completed += '✓ Bachelor<br>';
+                if (this.education.master) completed += '✓ Master<br>';
+                if (this.education.phd) completed += '✓ PhD<br>';
+                status.innerHTML = completed || 'No education yet';
+            },
+
+            checkAchievements() {
+                const achievements = [
+                    { id: 'millionaire', condition: () => this.calculateNetWorth() >= 1000000, name: '💰 Millionaire', desc: 'Reach $1M net worth' },
+                    { id: 'billionaire', condition: () => this.calculateNetWorth() >= 1000000000, name: '🌟 Billionaire', desc: 'Reach $1B net worth' },
+                    { id: 'business_tycoon', condition: () => this.businessLevel >= 5, name: '👑 Business Tycoon', desc: 'Reach level 5 in business' },
+                    { id: 'real_estate_magnate', condition: () => this.realEstate.length >= 5, name: '🏗️ Real Estate Magnate', desc: 'Own 5+ properties' },
+                    { id: 'scholar', condition: () => this.education.phd, name: '🎓 Scholar', desc: 'Complete PhD' },
+                    { id: 'well_rounded', condition: () => Object.values(this.skills).every(s => s >= 50), name: '🌐 Well Rounded', desc: 'All skills at 50+' },
+                    { id: 'social_butterfly', condition: () => this.reputation >= 100, name: '🦋 Social Butterfly', desc: 'Reputation 100+' },
+                    { id: 'health_nut', condition: () => this.health >= 95, name: '💪 Health Nut', desc: 'Health at 95%' }
+                ];
+
+                achievements.forEach(ach => {
+                    if (ach.condition() && !this.achievements.find(a => a.id === ach.id)) {
+                        this.achievements.push(ach);
+                        this.addEvent('Achievement Unlocked: ' + ach.name, 'positive');
+                    }
+                });
+            },
+
+            updateAchievements() {
+                const list = document.getElementById('achievementsList');
+                list.innerHTML = '';
+
+                const allAchievements = [
+                    { id: 'millionaire', condition: () => this.calculateNetWorth() >= 1000000, name: '💰 Millionaire', desc: 'Reach $1M net worth' },
+                    { id: 'billionaire', condition: () => this.calculateNetWorth() >= 1000000000, name: '🌟 Billionaire', desc: 'Reach $1B net worth' },
+                    { id: 'business_tycoon', condition: () => this.businessLevel >= 5, name: '👑 Business Tycoon', desc: 'Reach level 5 in business' },
+                    { id: 'real_estate_magnate', condition: () => this.realEstate.length >= 5, name: '🏗️ Real Estate Magnate', desc: 'Own 5+ properties' },
+                    { id: 'scholar', condition: () => this.education.phd, name: '🎓 Scholar', desc: 'Complete PhD' },
+                    { id: 'well_rounded', condition: () => Object.values(this.skills).every(s => s >= 50), name: '🌐 Well Rounded', desc: 'All skills at 50+' },
+                    { id: 'social_butterfly', condition: () => this.reputation >= 100, name: '🦋 Social Butterfly', desc: 'Reputation 100+' },
+                    { id: 'health_nut', condition: () => this.health >= 95, name: '💪 Health Nut', desc: 'Health at 95%' }
+                ];
+
+                allAchievements.forEach(ach => {
+                    const unlocked = ach.condition();
+                    const div = document.createElement('div');
+                    div.className = 'achievement' + (unlocked ? '' : ' locked');
+                    div.innerHTML = `
+                        <div class="achievement-title">${ach.name}</div>
+                        <div style="font-size: 0.9em;">${ach.desc}</div>
+                    `;
+                    list.appendChild(div);
+                });
+            },
+
+            capitalize(str) {
+                return str.charAt(0).toUpperCase() + str.slice(1);
+            }
+        };
+
+        // Initialize game
+        game.init();
+    </script>
+</body>
+</html>
