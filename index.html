@@ -412,8 +412,15 @@
                     <span class="stat-value" id="reputation">0</span>
                 </div>
                 <div class="button-group">
-                    <button class="btn-primary" onclick="game.nextYear()">⏭️ Next Year</button>
+                    <button class="btn-primary" onclick="game.work()" id="workBtn" style="display:none;">💼 Work Today</button>
+                    <button class="btn-primary" onclick="game.nextDay()">➡️ Next Day</button>
                     <button class="btn-secondary" onclick="game.rest()">😴 Rest</button>
+                </div>
+                <div style="margin-top: 15px; padding: 10px; background: #f0f0f0; border-radius: 5px;">
+                    <div class="stat-item">
+                        <span class="stat-label">Current Day:</span>
+                        <span class="stat-value" id="currentDay">1</span>
+                    </div>
                 </div>
             </div>
 
@@ -553,10 +560,19 @@
         </div>
     </div>
 
+    <div id="workModal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal" onclick="game.closeWorkModal()">&times;</span>
+            <h3 id="workTitle"></h3>
+            <div id="workContent"></div>
+        </div>
+    </div>
+
     <script>
         // Game State
         const game = {
-            year: 0,
+            year: 1,
+            day: 1,
             age: 18,
             cash: 1000,
             savings: 0,
@@ -564,6 +580,7 @@
             happiness: 50,
             reputation: 0,
             experience: 0,
+            workedToday: false,
 
             currentJob: null,
             jobSalary: 0,
@@ -598,16 +615,16 @@
             achievements: [],
 
             careers: [
-                { name: 'Fast Food Worker', salary: 25000, req: 0, skill: 'sales' },
-                { name: 'Retail Manager', salary: 45000, req: 0, skill: 'leadership' },
-                { name: 'Office Clerk', salary: 40000, req: 0, skill: 'programming' },
-                { name: 'Teacher', salary: 55000, req: 'highSchool', skill: 'leadership' },
-                { name: 'Junior Developer', salary: 75000, req: 'bachelor', skill: 'programming' },
-                { name: 'Sales Manager', salary: 65000, req: 'bachelor', skill: 'sales' },
-                { name: 'Project Manager', salary: 80000, req: 'bachelor', skill: 'leadership' },
-                { name: 'Senior Developer', salary: 130000, req: 'bachelor', skill: 'programming' },
-                { name: 'Executive', salary: 150000, req: 'master', skill: 'leadership' },
-                { name: 'Entrepreneur', salary: 0, req: 0, skill: 'negotiation' }
+                { name: 'Fast Food Worker', salary: 25000, req: 0, skill: 'sales', type: 'fastFood' },
+                { name: 'Retail Manager', salary: 45000, req: 0, skill: 'leadership', type: 'retail' },
+                { name: 'Office Clerk', salary: 40000, req: 0, skill: 'programming', type: 'office' },
+                { name: 'Teacher', salary: 55000, req: 'highSchool', skill: 'leadership', type: 'teacher' },
+                { name: 'Junior Developer', salary: 75000, req: 'bachelor', skill: 'programming', type: 'devJunior' },
+                { name: 'Sales Manager', salary: 65000, req: 'bachelor', skill: 'sales', type: 'sales' },
+                { name: 'Project Manager', salary: 80000, req: 'bachelor', skill: 'leadership', type: 'pm' },
+                { name: 'Senior Developer', salary: 130000, req: 'bachelor', skill: 'programming', type: 'devSenior' },
+                { name: 'Executive', salary: 150000, req: 'master', skill: 'leadership', type: 'executive' },
+                { name: 'Entrepreneur', salary: 0, req: 0, skill: 'negotiation', type: 'entrepreneur' }
             ],
 
             realEstateOptions: [
@@ -657,19 +674,497 @@
                 document.getElementById('health').textContent = this.health + '%';
                 document.getElementById('happiness').textContent = this.happiness + '%';
                 document.getElementById('reputation').textContent = this.reputation;
+                document.getElementById('currentDay').textContent = this.day;
 
-                document.getElementById('currentJob').textContent = this.currentJob || 'Unemployed';
+                document.getElementById('currentJob').textContent = this.currentJob ? this.currentJob : 'Unemployed';
                 document.getElementById('salary').textContent = '$' + this.formatNumber(this.jobSalary);
-                document.getElementById('experience').textContent = this.experience;
+                document.getElementById('experience').textContent = Math.floor(this.experience);
                 document.getElementById('monthlyIncome').textContent = '$' + this.formatNumber(this.calculateMonthlyIncome());
 
                 document.getElementById('realEstateValue').textContent = '$' + this.formatNumber(this.calculateRealEstateValue());
                 document.getElementById('investmentValue').textContent = '$' + this.formatNumber(this.calculateInvestmentValue());
                 document.getElementById('savingsValue').textContent = '$' + this.formatNumber(this.savings);
 
+                // Show work button only if employed
+                const workBtn = document.getElementById('workBtn');
+                workBtn.style.display = this.currentJob && !this.workedToday ? 'block' : 'none';
+
                 this.updateSkillsList();
                 this.updateEducationStatus();
                 this.updateAchievements();
+            },
+
+            nextDay() {
+                this.day++;
+                if (this.day > 30) {
+                    this.day = 1;
+                    this.year++;
+                    this.age = Math.floor(18 + this.year / 12);
+                    let monthlyIncome = this.calculateMonthlyIncome();
+                    this.cash += monthlyIncome;
+
+                    this.investments.forEach(inv => {
+                        inv.amount *= (1 + inv.returns + (Math.random() - 0.5) * inv.risk);
+                    });
+
+                    this.realEstate.forEach(prop => {
+                        prop.value *= 1.05 + Math.random() * 0.05;
+                    });
+
+                    this.triggerRandomEvent();
+                    this.checkAchievements();
+                    this.addEvent('Month ' + this.year + ' completed. Monthly income: $' + this.formatNumber(monthlyIncome), 'positive');
+                }
+
+                this.workedToday = false;
+                this.health = Math.max(0, this.health - 1);
+                this.happiness = Math.max(0, Math.min(100, this.happiness - 2));
+                this.update();
+            },
+
+            work() {
+                if (!this.currentJob || this.workedToday) return;
+                const career = this.careers.find(c => c.name === this.currentJob);
+                if (!career) return;
+
+                this.showWorkMiniGame(career);
+            },
+
+            showWorkMiniGame(career) {
+                const modal = document.getElementById('workModal');
+                const title = document.getElementById('workTitle');
+                const content = document.getElementById('workContent');
+
+                title.textContent = 'Working as: ' + career.name;
+
+                switch(career.type) {
+                    case 'fastFood':
+                        this.initFastFoodGame(content);
+                        break;
+                    case 'retail':
+                        this.initRetailGame(content);
+                        break;
+                    case 'office':
+                        this.initOfficeGame(content);
+                        break;
+                    case 'teacher':
+                        this.initTeacherGame(content);
+                        break;
+                    case 'devJunior':
+                        this.initDevGame(content, false);
+                        break;
+                    case 'devSenior':
+                        this.initDevGame(content, true);
+                        break;
+                    case 'sales':
+                        this.initSalesGame(content);
+                        break;
+                    case 'pm':
+                        this.initPMGame(content);
+                        break;
+                    case 'executive':
+                        this.initExecutiveGame(content);
+                        break;
+                    case 'retail':
+                        this.initRetailGame(content);
+                        break;
+                }
+
+                modal.classList.add('active');
+            },
+
+            initFastFoodGame(content) {
+                const orders = ['Burger', 'Pizza', 'Taco', 'Sandwich', 'Salad'];
+                let score = 0;
+                let correct = 0;
+                const maxRounds = 5;
+                let round = 1;
+
+                const renderRound = () => {
+                    if (round > maxRounds) {
+                        const bonus = Math.floor(this.jobSalary / 30 * (correct / maxRounds));
+                        content.innerHTML = `
+                            <h4>Shift Complete!</h4>
+                            <p>Correct orders: ${correct}/${maxRounds}</p>
+                            <p class="success">Earned: $${this.formatNumber(bonus)}</p>
+                            <button class="btn-primary btn-full" onclick="game.completeWork(${bonus}, ${correct}, 'sales')">Finish Shift</button>
+                        `;
+                        return;
+                    }
+
+                    const correctOrder = orders[Math.floor(Math.random() * orders.length)];
+                    const wrong1 = orders[Math.floor(Math.random() * orders.length)];
+                    const wrong2 = orders[Math.floor(Math.random() * orders.length)];
+
+                    let options = [correctOrder, wrong1, wrong2].sort(() => Math.random() - 0.5);
+
+                    content.innerHTML = `
+                        <h4>Order ${round}/${maxRounds}</h4>
+                        <p style="font-size: 1.2em; margin: 20px 0;">Customer orders:</p>
+                        <p style="font-size: 1.5em; font-weight: bold; color: #667eea;">${correctOrder}</p>
+                        <div class="button-group">
+                            ${options.map((opt, i) => `
+                                <button class="btn-secondary" onclick="game.fastFoodAnswer('${opt}', '${correctOrder}', ${content})">${opt}</button>
+                            `).join('')}
+                        </div>
+                    `;
+                };
+
+                window.fastFoodAnswer = (selected, correct, cont) => {
+                    if (selected === correct) correct++;
+                    round++;
+                    this.initFastFoodGame(content);
+                };
+
+                renderRound();
+            },
+
+            initRetailGame(content) {
+                let salesCount = 0;
+                let rounds = 5;
+                let round = 1;
+
+                const renderRound = () => {
+                    if (round > rounds) {
+                        const bonus = Math.floor(this.jobSalary / 30 * (salesCount / rounds) * 1.5);
+                        content.innerHTML = `
+                            <h4>Shift Complete!</h4>
+                            <p>Successful sales: ${salesCount}/${rounds}</p>
+                            <p class="success">Earned: $${this.formatNumber(bonus)}</p>
+                            <button class="btn-primary btn-full" onclick="game.completeWork(${bonus}, ${salesCount}, 'leadership')">Finish Shift</button>
+                        `;
+                        return;
+                    }
+
+                    const customerType = ['Budget Customer', 'Regular', 'VIP'][Math.floor(Math.random() * 3)];
+                    const difficulty = customerType === 'VIP' ? 0.7 : customerType === 'Regular' ? 0.5 : 0.3;
+
+                    content.innerHTML = `
+                        <h4>Customer ${round}/${rounds}</h4>
+                        <p>Type: ${customerType}</p>
+                        <p style="margin: 20px 0;">Try to convince them to buy something...</p>
+                        <div class="button-group">
+                            <button class="btn-secondary" onclick="game.retailPitch(true, ${difficulty})">Use Charm ✨</button>
+                            <button class="btn-secondary" onclick="game.retailPitch(false, ${difficulty})">Aggressive Sales 💪</button>
+                        </div>
+                    `;
+                };
+
+                window.retailPitch = (charm, difficulty) => {
+                    const success = charm ? Math.random() > (difficulty * 0.5) : Math.random() > difficulty;
+                    if (success) salesCount++;
+                    round++;
+                    renderRound();
+                };
+
+                renderRound();
+            },
+
+            initOfficeGame(content) {
+                let processed = 0;
+                const tasks = 10;
+                let completed = 0;
+
+                const renderTask = () => {
+                    if (completed >= tasks) {
+                        const bonus = Math.floor(this.jobSalary / 30 * 0.8);
+                        content.innerHTML = `
+                            <h4>Work Day Complete!</h4>
+                            <p>Documents processed: ${completed}/${tasks}</p>
+                            <p class="success">Earned: $${this.formatNumber(bonus)}</p>
+                            <button class="btn-primary btn-full" onclick="game.completeWork(${bonus}, ${completed}, 'programming')">Finish</button>
+                        `;
+                        return;
+                    }
+
+                    const dataEntry = Math.random().toString(36).substring(2, 8);
+                    content.innerHTML = `
+                        <h4>Document ${completed + 1}/${tasks}</h4>
+                        <p>Enter the data code:</p>
+                        <p style="font-family: monospace; font-size: 1.5em; font-weight: bold; margin: 20px 0; background: #f0f0f0; padding: 15px; border-radius: 5px;">${dataEntry}</p>
+                        <input type="text" id="dataInput" placeholder="Type code here" style="width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 5px;">
+                        <button class="btn-primary btn-full" onclick="game.officeDataCheck('${dataEntry}')">Submit</button>
+                    `;
+
+                    setTimeout(() => document.getElementById('dataInput')?.focus(), 100);
+                };
+
+                window.officeDataCheck = (correct) => {
+                    const input = document.getElementById('dataInput').value;
+                    if (input === correct) completed++;
+                    renderTask();
+                };
+
+                renderTask();
+            },
+
+            initTeacherGame(content) {
+                const lessons = [
+                    { question: 'What is 7 × 8?', answer: '56', options: ['54', '56', '58'] },
+                    { question: 'What is the capital of France?', answer: 'Paris', options: ['London', 'Paris', 'Berlin'] },
+                    { question: 'What is 15 ÷ 3?', answer: '5', options: ['4', '5', '6'] },
+                    { question: 'What is H₂O?', answer: 'Water', options: ['Oxygen', 'Water', 'Hydrogen'] },
+                    { question: 'What year did WW2 end?', answer: '1945', options: ['1944', '1945', '1946'] }
+                ];
+
+                let lessonIdx = 0;
+                let correct = 0;
+
+                const renderLesson = () => {
+                    if (lessonIdx >= lessons.length) {
+                        const bonus = Math.floor(this.jobSalary / 30 * (correct / lessons.length) * 1.2);
+                        content.innerHTML = `
+                            <h4>Teaching Session Complete!</h4>
+                            <p>Students passed: ${correct}/${lessons.length}</p>
+                            <p class="success">Earned: $${this.formatNumber(bonus)}</p>
+                            <button class="btn-primary btn-full" onclick="game.completeWork(${bonus}, ${correct}, 'leadership')">Finish</button>
+                        `;
+                        return;
+                    }
+
+                    const lesson = lessons[lessonIdx];
+                    const opts = lesson.options.sort(() => Math.random() - 0.5);
+
+                    content.innerHTML = `
+                        <h4>Lesson ${lessonIdx + 1}/${lessons.length}</h4>
+                        <p style="font-size: 1.1em; margin: 20px 0;">${lesson.question}</p>
+                        <div class="button-group">
+                            ${opts.map(opt => `
+                                <button class="btn-secondary" onclick="game.teacherAnswer('${opt}', '${lesson.answer}')">${opt}</button>
+                            `).join('')}
+                        </div>
+                    `;
+                };
+
+                window.teacherAnswer = (selected, correct) => {
+                    if (selected === correct) correct++;
+                    lessonIdx++;
+                    renderLesson();
+                };
+
+                renderLesson();
+            },
+
+            initDevGame(content, senior) {
+                const bugs = [
+                    { code: 'let x = 5\nlet y = 10\nreturn x + y', error: 'Missing semicolons', fix: 'Add semicolons' },
+                    { code: 'function add(a b) { return a + b; }', error: 'Missing comma', fix: 'Add comma between parameters' },
+                    { code: 'const arr = [1, 2, 3]\narr[5] = 10', error: 'Array out of bounds', fix: 'Properly initialize array' },
+                    { code: 'if (x = 5) { }', error: 'Assignment instead of comparison', fix: 'Use == or ===' },
+                    { code: 'for (let i = 0; i < 10; i++) { }', error: 'Infinite loop', fix: 'Add proper termination' }
+                ];
+
+                let bugIdx = 0;
+                let fixed = 0;
+                const rounds = senior ? 7 : 5;
+
+                const renderBug = () => {
+                    if (bugIdx >= rounds) {
+                        const bonus = Math.floor(this.jobSalary / 30 * (fixed / rounds) * (senior ? 1.5 : 1));
+                        content.innerHTML = `
+                            <h4>Debug Session Complete!</h4>
+                            <p>Bugs fixed: ${fixed}/${rounds}</p>
+                            <p class="success">Earned: $${this.formatNumber(bonus)}</p>
+                            <button class="btn-primary btn-full" onclick="game.completeWork(${bonus}, ${fixed}, 'programming')">Finish</button>
+                        `;
+                        return;
+                    }
+
+                    const bug = bugs[bugIdx % bugs.length];
+                    const fixes = [bug.fix, 'Rewrite function', 'Delete code'].sort(() => Math.random() - 0.5);
+
+                    content.innerHTML = `
+                        <h4>Bug ${bugIdx + 1}/${rounds}</h4>
+                        <p style="color: #e74c3c; font-weight: bold;">Error: ${bug.error}</p>
+                        <p style="font-family: monospace; background: #f0f0f0; padding: 10px; margin: 15px 0; border-radius: 5px; font-size: 0.9em;">${bug.code}</p>
+                        <div class="button-group">
+                            ${fixes.map(fix => `
+                                <button class="btn-secondary" onclick="game.devFix('${fix}', '${bug.fix}')">${fix}</button>
+                            `).join('')}
+                        </div>
+                    `;
+                };
+
+                window.devFix = (selected, correct) => {
+                    if (selected === correct) fixed++;
+                    bugIdx++;
+                    renderBug();
+                };
+
+                renderBug();
+            },
+
+            initSalesGame(content) {
+                const prospects = [
+                    { name: 'Small Business', budget: 50000, interest: 0.4 },
+                    { name: 'Medium Corp', budget: 200000, interest: 0.6 },
+                    { name: 'Enterprise', budget: 1000000, interest: 0.8 }
+                ];
+
+                let saleIdx = 0;
+                let sold = 0;
+                let revenue = 0;
+
+                const renderProspect = () => {
+                    if (saleIdx >= prospects.length) {
+                        const bonus = Math.floor(revenue * 0.05);
+                        content.innerHTML = `
+                            <h4>Sales Day Complete!</h4>
+                            <p>Deals closed: ${sold}/${prospects.length}</p>
+                            <p>Revenue: $${this.formatNumber(revenue)}</p>
+                            <p class="success">Commission: $${this.formatNumber(bonus)}</p>
+                            <button class="btn-primary btn-full" onclick="game.completeWork(${bonus}, ${sold}, 'sales')">Finish</button>
+                        `;
+                        return;
+                    }
+
+                    const prospect = prospects[saleIdx];
+                    content.innerHTML = `
+                        <h4>Prospect ${saleIdx + 1}/${prospects.length}</h4>
+                        <p><strong>${prospect.name}</strong></p>
+                        <p>Budget: $${this.formatNumber(prospect.budget)}</p>
+                        <p style="margin: 20px 0;">Choose your pitch...</p>
+                        <div class="button-group">
+                            <button class="btn-secondary" onclick="game.salesPitch('premium', ${prospect.interest})">Premium Package</button>
+                            <button class="btn-secondary" onclick="game.salesPitch('standard', ${prospect.interest})">Standard Package</button>
+                            <button class="btn-secondary" onclick="game.salesPitch('budget', ${prospect.interest})">Budget Package</button>
+                        </div>
+                    `;
+                };
+
+                window.salesPitch = (package, interest) => {
+                    const packages = {
+                        premium: { price: 100000, success: interest * 1.2 },
+                        standard: { price: 50000, success: interest * 1.5 },
+                        budget: { price: 20000, success: interest * 1.8 }
+                    };
+
+                    const pkg = packages[package];
+                    if (Math.random() < Math.min(0.95, pkg.success)) {
+                        sold++;
+                        revenue += pkg.price;
+                    }
+
+                    saleIdx++;
+                    renderProspect();
+                };
+
+                renderProspect();
+            },
+
+            initPMGame(content) {
+                const tasks = [
+                    { name: 'Task A', priority: 'high', time: 5 },
+                    { name: 'Task B', priority: 'medium', time: 3 },
+                    { name: 'Task C', priority: 'low', time: 2 },
+                    { name: 'Task D', priority: 'high', time: 4 },
+                    { name: 'Task E', priority: 'medium', time: 2 }
+                ];
+
+                let scheduled = [];
+                let timeUsed = 0;
+                const timeLimit = 10;
+
+                const renderScheduling = () => {
+                    const remaining = tasks.filter(t => !scheduled.includes(t.name));
+
+                    if (remaining.length === 0) {
+                        const bonus = Math.floor(this.jobSalary / 30 * (scheduled.length / tasks.length) * 1.3);
+                        content.innerHTML = `
+                            <h4>Sprint Planning Complete!</h4>
+                            <p>Tasks scheduled: ${scheduled.length}/${tasks.length}</p>
+                            <p>Time used: ${timeUsed}/${timeLimit}</p>
+                            <p class="success">Earned: $${this.formatNumber(bonus)}</p>
+                            <button class="btn-primary btn-full" onclick="game.completeWork(${bonus}, ${scheduled.length}, 'leadership')">Finish</button>
+                        `;
+                        return;
+                    }
+
+                    content.innerHTML = `
+                        <h4>Sprint Planning (${timeUsed}/${timeLimit} time used)</h4>
+                        <p style="margin: 15px 0;"><strong>Remaining Tasks:</strong></p>
+                        <div class="button-group" style="display: block;">
+                            ${remaining.map(task => `
+                                <button class="btn-secondary" onclick="game.pmSchedule('${task.name}', ${task.time})" style="text-align: left; margin: 8px 0; display: block; width: 100%;">
+                                    ${task.name} (${task.time}h) - ${task.priority}
+                                </button>
+                            `).join('')}
+                        </div>
+                    `;
+                };
+
+                window.pmSchedule = (taskName, time) => {
+                    if (timeUsed + time <= timeLimit) {
+                        scheduled.push(taskName);
+                        timeUsed += time;
+                    }
+                    renderScheduling();
+                };
+
+                renderScheduling();
+            },
+
+            initExecutiveGame(content) {
+                const decisions = [
+                    { scenario: 'Market shows downturn. Invest or save?', invest: 0.6, save: 0.4 },
+                    { scenario: 'New product launch? High risk, high reward?', yes: 0.7, no: 0.3 },
+                    { scenario: 'Expand to new market?', expand: 0.65, hold: 0.35 },
+                    { scenario: 'Hire more staff or automate?', hire: 0.5, automate: 0.8 }
+                ];
+
+                let decIdx = 0;
+                let goodDecisions = 0;
+
+                const renderDecision = () => {
+                    if (decIdx >= decisions.length) {
+                        const bonus = Math.floor(this.jobSalary / 30 * (goodDecisions / decisions.length) * 2);
+                        content.innerHTML = `
+                            <h4>Board Meeting Complete!</h4>
+                            <p>Good decisions: ${goodDecisions}/${decisions.length}</p>
+                            <p class="success">Earned: $${this.formatNumber(bonus)}</p>
+                            <button class="btn-primary btn-full" onclick="game.completeWork(${bonus}, ${goodDecisions}, 'leadership')">Finish</button>
+                        `;
+                        return;
+                    }
+
+                    const decision = decisions[decIdx];
+                    const options = Object.keys(decision).filter(k => k !== 'scenario');
+
+                    content.innerHTML = `
+                        <h4>Board Decision ${decIdx + 1}/${decisions.length}</h4>
+                        <p style="font-size: 1.1em; margin: 20px 0; font-weight: 600;">${decision.scenario}</p>
+                        <div class="button-group">
+                            ${options.map(opt => `
+                                <button class="btn-secondary" onclick="game.execDecision('${opt}', ${decision[opt]})">${opt}</button>
+                            `).join('')}
+                        </div>
+                    `;
+                };
+
+                window.execDecision = (choice, successRate) => {
+                    if (Math.random() < successRate) goodDecisions++;
+                    decIdx++;
+                    renderDecision();
+                };
+
+                renderDecision();
+            },
+
+            completeWork(bonus, performance, skillGain) {
+                this.cash += bonus;
+                this.health -= 15;
+                this.happiness -= 5;
+                this.experience += performance;
+                this.skills[skillGain] += 3 + performance * 0.5;
+                this.workedToday = true;
+
+                this.addEvent('Shift complete! Earned $' + this.formatNumber(bonus) + ' and improved ' + skillGain, 'positive');
+                this.closeWorkModal();
+                this.update();
+            },
+
+            closeWorkModal() {
+                document.getElementById('workModal').classList.remove('active');
             },
 
             formatNumber(num) {
@@ -695,35 +1190,6 @@
                 return this.investments.reduce((sum, inv) => sum + inv.amount, 0);
             },
 
-            nextYear() {
-                this.year++;
-                this.age++;
-                this.experience += Math.random() * 10;
-
-                let monthlyIncome = this.calculateMonthlyIncome();
-                this.cash += monthlyIncome * 12;
-
-                this.health = Math.min(100, this.health + (this.happiness > 60 ? 5 : -5));
-                this.happiness = Math.max(0, Math.min(100, this.happiness + Math.random() * 20 - 10));
-
-                this.skills.negotiation += 1;
-                Object.keys(this.skills).forEach(skill => {
-                    if (Math.random() < 0.3) this.skills[skill] += Math.random() * 2;
-                });
-
-                this.investments.forEach(inv => {
-                    inv.amount *= (1 + inv.returns + (Math.random() - 0.5) * inv.risk);
-                });
-
-                this.realEstate.forEach(prop => {
-                    prop.value *= 1.05 + Math.random() * 0.05;
-                });
-
-                this.triggerRandomEvent();
-                this.checkAchievements();
-                this.update();
-                this.addEvent('Year ' + this.year + ' completed. Monthly income: $' + this.formatNumber(monthlyIncome), 'positive');
-            },
 
             rest() {
                 this.health = Math.min(100, this.health + 20);
